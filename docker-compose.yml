@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16.3
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - geo-net
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+
+  db-migrations:
+    build:
+      dockerfile: ./docker_builds/Dockerfile
+      context: .
+    entrypoint: >
+      sh -c "sleep 10 && alembic upgrade head"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    networks:
+      - geo-net
+
+  redis:
+    image: redis:7.2
+    restart: always
+    networks:
+      - geo-net
+    ports:
+      - "6379:6379"
+
+  geo-mapper:
+    build:
+      dockerfile: ./docker_builds/Dockerfile
+      context: .
+    volumes:
+      - shared_volume:/shared
+    networks:
+      - geo-net
+    depends_on:
+      - db
+      - redis
+      - db-migrations
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+
+  celery-worker:
+    build:
+      dockerfile: ./docker_builds/Dockerfile
+      context: .
+    volumes:
+      - shared_volume:/shared
+    entrypoint: celery -A celery_worker.celery_app worker --loglevel=info
+    networks:
+      - geo-net
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+
+networks:
+  geo-net:
+    driver: bridge
+
+volumes:
+  shared_volume:
+    driver: local

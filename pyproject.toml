@@ -1,0 +1,32 @@
+[project]
+name = "geo-mapper"
+version = "1.0"
+description = "Geo Mapper is an API that provides mapping between geo points with distance resolution"
+authors = [
+    {name = "Maxim Shebunyaev", email = "maximsheb1@gmail.com"},
+]
+dependencies = [
+    "fastapi>=0.112.1",
+    "pydantic>=2.8.2",
+    "sqlalchemy>=2.0.32",
+    "alembic>=1.13.2",
+    "fastapi-async-sqlalchemy>=0.6.1",
+    "pydantic-settings>=2.4.0",
+    "uvicorn>=0.30.6",
+    "asyncpg>=0.29.0",
+    "celery[redis]>=5.4.0",
+    "python-multipart>=0.0.9",
+    "geopy>=2.4.1",
+    "certifi>=2024.7.4",
+    "aiofiles>=24.1.0",
+    "black>=24.8.0",
+    "flake8>=7.1.1",
+    "autoflake>=2.3.1",
+    "pre-commit>=3.8.0",
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+[tool.pdm]
+distribution = false
