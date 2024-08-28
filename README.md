@@ -3,8 +3,8 @@
 ## Get started
 
 ## Service can be run in two mods:
-- local (`.env.local` file should be created in the root directory with the same structure as `.env.example` file)
-- dev (`.env` file should be created in the root directory with the same structure as `.env.example` file)
+- *local* - for local run (`.env.local` file should be created in the root directory with the same structure as `.env.example` file)
+- *dev* - for docker run (`.env` file should be created in the root directory with the same structure as `.env.example` file)
 
 ## Run service using local mode
 ### Setup Python Virtual Environment and dependencies for local development
