@@ -1,9 +1,11 @@
 from celery import Celery
 
+from app.settings import app_config
+
 celery_app = Celery(
     "celery-worker",
-    broker="redis://redis:6379/0",
-    backend="redis://redis:6379/0"
+    broker=app_config.REDIS_URL,
+    backend=app_config.REDIS_URL
 )
 
 celery_app.conf.update(
