@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, UUID, String
+from sqlalchemy import Column, UUID, Enum
 from sqlalchemy.orm import relationship
 
 from app.constant.task_status_enum import TaskStatusEnum
@@ -11,7 +11,7 @@ class Task(Base):
     __tablename__ = "Task"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    status = Column(String, nullable=False)
+    status = Column(Enum(TaskStatusEnum), nullable=False)
 
     points = relationship("GeoPoint", back_populates="task")
     links = relationship("LinkedDistance", back_populates="task")

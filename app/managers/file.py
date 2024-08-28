@@ -1,39 +1,21 @@
-import asyncio
-import csv
 import os
-import ssl
-import tempfile
-
 import aiofiles
-import certifi
 
 from uuid import UUID
-
 from fastapi import UploadFile
-from geopy import Location
-from geopy.geocoders import Nominatim
-from geopy.distance import geodesic
 
+from app.managers.geocoder import GeocoderManager
 from app.models import LinkedDistance, GeoPoint
-
-ssl_context = ssl.create_default_context(cafile=certifi.where())
-geolocator = Nominatim(user_agent="geo-mapper", ssl_context=ssl_context)
+from app.utils.errors import (
+    FileProcessingError,
+    FileSaveError,
+    FileReadError,
+    FilePathError
+)
 
 
 class FileManager:
     CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB
-
-    @classmethod
-    async def reverse_geocode_async(cls, lat: float, lon: float) -> Location:
-        """
-        Reverse geocode the given latitude and longitude
-        :param lat: latitude of the point in float
-        :param lon: longitude of the point in float
-        :return: address of the point
-        """
-        return await asyncio.to_thread(
-            geolocator.reverse, (lat, lon), timeout=10
-        )
 
     @classmethod
     async def read_in_chunks(cls, file_path: str) -> bytes:
@@ -51,11 +33,11 @@ class FileManager:
                     yield chunk
 
         except FileNotFoundError:
-            raise RuntimeError(f"File {file_path} not found.")
+            raise FilePathError(f"File {file_path} not found.")
         except OSError as e:
-            raise RuntimeError(f"Failed to read file {file_path}: {e}")
+            raise FileReadError(f"Failed to read file {file_path}: {e}")
         except Exception as e:
-            raise RuntimeError(
+            raise FileProcessingError(
                 f"An unexpected error occurred "
                 f"while reading the file {file_path}: {e}"
             )
@@ -72,9 +54,9 @@ class FileManager:
             return file_path
 
         except OSError as e:
-            raise RuntimeError(f"Failed to save file {file.filename}: {e}")
+            raise FileSaveError(f"Failed to save file {file.filename}: {e}")
         except Exception as e:
-            raise RuntimeError(
+            raise FileProcessingError(
                 f"An unexpected error occurred "
                 f"while saving the file {file.filename}: {e}"
             )
@@ -91,47 +73,11 @@ class FileManager:
         :param task_id: uuid of task
         :return: tuple of geo points and linked distances
         """
-        geo_points = []
-        linked_distances = []
+        geocoder_manager = GeocoderManager()
 
         chunk_str = chunk.decode('utf-8').splitlines()
-        reader = csv.DictReader(chunk_str)
 
-        geocode_tasks = [
-            cls.reverse_geocode_async(
-                float(row["Latitude"]), float(row["Longitude"]))  # noqa
-            for row in reader
-        ]
-        addresses = await asyncio.gather(*geocode_tasks)
-
-        del reader
-        reader = csv.DictReader(chunk_str)
-
-        # create geo points objects
-        for index, row in enumerate(reader):
-            geo_point = GeoPoint(
-                name=row["Point"],
-                latitude=float(row["Latitude"]),
-                longitude=float(row["Longitude"]),
-                address=addresses[index].address,
-                task_id=task_id
-            )
-            geo_points.append(geo_point)
-
-        # create linked distance objects
-        for i in range(len(geo_points)):
-            for j in range(i + 1, len(geo_points)):
-                point1, point2 = geo_points[i], geo_points[j]
-                distance = geodesic((point1.latitude, point1.longitude),
-                                    (point2.latitude, point2.longitude)).meters
-                linked_distance = LinkedDistance(
-                    name=f"{point1.name}{point2.name}",
-                    distance=distance,
-                    task_id=task_id
-                )
-                linked_distances.append(linked_distance)
+        geo_points = await geocoder_manager.get_geo_points(chunk_str, task_id)
+        linked_distances = await geocoder_manager.get_linked_distances(geo_points, task_id)  # noqa
 
         return geo_points, linked_distances
-
-
-file_manager = FileManager()

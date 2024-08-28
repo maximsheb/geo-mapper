@@ -50,6 +50,8 @@ services:
       - db-migrations
     env_file:
       - .env
+    environment:
+      ENV: "dev"
     ports:
       - "8000:8000"
 

@@ -30,9 +30,9 @@ class TaskRepository:
             raise
 
     @classmethod
-    async def update(cls, task_id: uuid, db_session: AsyncSession) -> None:
+    async def finish(cls, task_id: uuid, db_session: AsyncSession) -> None:
         """
-        Updates task status
+        Updates task status with done
         :param task_id: uuid of task
         :param db_session: db session
         :return: function doesn't return anything after successful finishing
@@ -70,6 +70,3 @@ class TaskRepository:
             )
 
         return task
-
-
-task_repository = TaskRepository()

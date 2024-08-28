@@ -16,7 +16,6 @@ class AppSettings(BaseSettings):
 
     class Config:
         validate_assignment = True
-        env_file = ".env"
 
     DEBUG: bool = False
     DOCS_URL: str = "/docs"
@@ -39,6 +38,9 @@ class AppSettings(BaseSettings):
     # App run settings
     HOST: str = Field(default="127.0.0.1", env="HOST")
     PORT: int = Field(default=8080, env="PORT")
+
+    # Redis settings
+    REDIS_URL: str
 
     # Database settings
     DB_SERVER: str

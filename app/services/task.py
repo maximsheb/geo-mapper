@@ -5,9 +5,9 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.managers.file import file_manager
-from app.repositories.result import result_repository
-from app.repositories.task import task_repository
+from app.managers.file import FileManager
+from app.repositories.result import ResultRepository
+from app.repositories.task import TaskRepository
 from app.settings.db import get_session_context
 from celery_worker import celery_app
 
@@ -48,12 +48,16 @@ async def process_file(
     :return: function doesn't return anything after successful finishing
     """
     try:
+        task_repository = TaskRepository()
+        result_repository = ResultRepository()
+        file_manager = FileManager()
+
         async for chunk in file_manager.read_in_chunks(file_path):
             geo_points, linked_distances = await file_manager.process_chunk(
                 chunk, task_id
             )
             await result_repository.create(geo_points, linked_distances, db_session)
-        await task_repository.update(task_id, db_session)
+        await task_repository.finish(task_id, db_session)
     finally:
         # remove file after processing
         os.remove(file_path)

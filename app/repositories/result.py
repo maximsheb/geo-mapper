@@ -28,6 +28,3 @@ class ResultRepository:
             await db_session.rollback()
             logger.error(f"Database operation failed: {e}")
             raise
-
-
-result_repository = ResultRepository()
