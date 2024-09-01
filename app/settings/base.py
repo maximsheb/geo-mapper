@@ -23,7 +23,7 @@ class AppSettings(BaseSettings):
     ROOT_PATH: str = ""
     OPENAPI_URL: str = "/openapi.json"
     REDOC_URL: str = "/redoc"
-    TITLE: str = "Payment API service"
+    TITLE: str = "Geo-mapper API service"
     DESCRIPTION: str = (
         "Service that provides mapping between "
         "geo points with distance resolution"
