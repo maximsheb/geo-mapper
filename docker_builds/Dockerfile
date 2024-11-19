@@ -14,6 +14,9 @@ RUN $PDM_HOME/bin/pip install pdm
 
 # copy project files
 COPY . $APP_HOME/
+#
+#COPY test_file.csv /shared/test_file.csv
+#RUN chown 1000:1000 /shared/test_file.csv
 
 # install dependencies
 RUN $PDM_HOME/bin/pdm install -g -p ${APP_HOME}

@@ -1,0 +1,120 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16.3
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+
+  db-migrations:
+    build:
+      dockerfile: ./docker_builds/Dockerfile
+      context: .
+    entrypoint: >
+      sh -c "sleep 10 && alembic upgrade head"
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  redis:
+    image: redis:7.2
+    restart: always
+    ports:
+      - "6379:6379"
+
+  geo-mapper:
+    build:
+      dockerfile: ./docker_builds/Dockerfile
+      context: .
+    volumes:
+      - shared_volume:/shared
+    depends_on:
+      - db
+      - redis
+      - db-migrations
+    env_file:
+      - .env
+    environment:
+      ENV: "dev"
+    ports:
+      - "8000:8000"
+
+  celery-worker:
+    build:
+      dockerfile: ./docker_builds/Dockerfile
+      context: .
+    volumes:
+      - shared_volume:/shared
+    entrypoint: celery -A celery_worker.celery_app worker --loglevel=info
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    links:
+      - geo-mapper
+      - node-exporter
+      - locust-metrics-exporter
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    links:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+
+  locust:
+    image: locustio/locust:latest
+    container_name: locust
+    volumes:
+      - ./locustfile.py:/mnt/locust/locustfile.py
+      - shared_volume:/shared
+      - ./test_file.csv:/mnt/locust/test_file.csv
+    command: >
+      -f /mnt/locust/locustfile.py
+      --host=http://geo-mapper:8000
+    ports:
+      - "8089:8089"
+    links:
+      - geo-mapper
+
+  locust-metrics-exporter:
+    image: containersol/locust_exporter:latest
+    container_name: locust-metrics-exporter
+    environment:
+      - LOCUST_EXPORTER_URI=http://locust:8089
+    ports:
+      - "9646:9646"
+    depends_on:
+      - locust
+    links:
+      - locust
+
+volumes:
+  shared_volume:
+    driver: local
