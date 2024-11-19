@@ -60,4 +60,5 @@ async def process_file(
         await task_repository.finish(task_id, db_session)
     finally:
         # remove file after processing
-        os.remove(file_path)
+        # os.remove(file_path)
+        ...
